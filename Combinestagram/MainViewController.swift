@@ -27,6 +27,7 @@ class MainViewController: UIViewController {
 
   private let bag = DisposeBag()
   private let images = Variable<[UIImage]>([])
+  var imageCache = [Int]()
 
   @IBOutlet weak var imagePreview: UIImageView!
   @IBOutlet weak var buttonClear: UIButton!
@@ -60,6 +61,7 @@ class MainViewController: UIViewController {
 
   @IBAction func actionClear() {
     images.value = []
+    imageCache = []
   }
 
   @IBAction func actionSave() {
@@ -84,16 +86,22 @@ class MainViewController: UIViewController {
     let newPhotos =  photosViewController.selectedPhotos.share()
 
     newPhotos
-      .filter { newImage in
+    .filter { newImage in
         newImage.size.width > newImage.size.height
       }
-      .subscribe(onNext: { [weak self] newImage in
+    .filter { [weak self] newImage in
+        let lenght = UIImagePNGRepresentation(newImage)?.count ?? 0
+        guard self?.imageCache.contains(lenght) == false else { return false }
+        self?.imageCache.append(lenght)
+        return true
+    }
+    .subscribe(onNext: { [weak self] newImage in
         guard let images = self?.images else { return }
         images.value.append(newImage)
-      }, onDisposed: {
-          print("completed photo selection")
-      })
-      .disposed(by: bag)
+    }, onDisposed: {
+        print("completed photo selection")
+    })
+    .disposed(by: bag)
     
     newPhotos
         .ignoreElements()
