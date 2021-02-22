@@ -86,23 +86,26 @@ class MainViewController: UIViewController {
     let newPhotos =  photosViewController.selectedPhotos.share()
 
     newPhotos
-    .filter { newImage in
-        newImage.size.width > newImage.size.height
-      }
-    .filter { [weak self] newImage in
-        let lenght = UIImagePNGRepresentation(newImage)?.count ?? 0
-        guard self?.imageCache.contains(lenght) == false else { return false }
-        self?.imageCache.append(lenght)
-        return true
-    }
-    .subscribe(onNext: { [weak self] newImage in
-        guard let images = self?.images else { return }
-        images.value.append(newImage)
-    }, onDisposed: {
-        print("completed photo selection")
-    })
-    .disposed(by: bag)
-    
+        .takeWhile {[weak self] image in
+            (self?.images.value.count ?? 0) < 6
+        }
+        .filter { newImage in
+            newImage.size.width > newImage.size.height
+          }
+        .filter { [weak self] newImage in
+            let lenght = UIImagePNGRepresentation(newImage)?.count ?? 0
+            guard self?.imageCache.contains(lenght) == false else { return false }
+            self?.imageCache.append(lenght)
+            return true
+        }
+        .subscribe(onNext: { [weak self] newImage in
+            guard let images = self?.images else { return }
+            images.value.append(newImage)
+        }, onDisposed: {
+            print("completed photo selection")
+        })
+        .disposed(by: bag)
+        
     newPhotos
         .ignoreElements()
         .subscribe(onCompleted: { [weak self] in
