@@ -71,9 +71,11 @@ class PhotosViewController: UICollectionViewController {
     authorized
         .skipWhile { $0 == false }
         .take(1)
+        .do(onNext: { [weak self] _ in
+            self?.photos = PhotosViewController.loadPhotos()
+        })
         .observeOn(MainScheduler.instance)
         .subscribe(onNext: { [weak self] _ in
-            self?.photos = PhotosViewController.loadPhotos()
             self?.collectionView?.reloadData()
         })
         .disposed(by: disposeBag)
